@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>指令室2070 — C案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#101113; --bg-2:#16181b; --rule:#2a2c30; --rule-2:#3a3d42; --tx:#c8ccd2; --tx-2:#8a9099; --tx-3:#5d636b;
+  --hi:#eef0f3; --acc:#8fd0c0;
+  --mono:"IBM Plex Mono",monospace; --sans:"IBM Plex Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--tx);overflow:hidden}
+body{font-family:var(--sans);font-size:13px;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.app{height:100vh;display:grid;grid-template-columns:300px minmax(0,1fr) 280px;grid-template-rows:36px minmax(0,1fr) 150px 26px}
+.app>*{border-color:var(--rule)}
+.bar{grid-column:1/4;display:flex;align-items:center;gap:24px;padding:0 20px;border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--tx-2);text-transform:uppercase}
+.bar b{color:var(--hi);font-weight:500}
+.bar .sp{margin-left:auto}
+.bar .dot{display:inline-block;width:6px;height:6px;background:var(--tx-2);margin-right:8px;vertical-align:1px}
+.bar .dot.on{background:var(--acc)}
+
+.read{grid-row:2;border-right:1px solid var(--rule);padding:22px 20px;display:flex;flex-direction:column;gap:0;overflow:hidden}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--tx-3);text-transform:uppercase;display:flex;justify-content:space-between}
+.lbl span:last-child{color:var(--tx-3);text-transform:none;letter-spacing:.04em;font-family:var(--sans)}
+.yr{font-family:var(--mono);font-weight:400;font-size:64px;line-height:1;color:var(--hi);letter-spacing:-.03em;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.yr small{font-size:.4em;color:var(--tx-2);letter-spacing:0}
+.kind{font-size:11px;color:var(--tx-2)}
+.meter{padding:14px 0;border-top:1px solid var(--rule)}
+.meter:first-child{border-top:0;padding-top:0}
+.meter .v{font-family:var(--mono);font-size:26px;color:var(--hi);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.meter .v small{font-size:12px;color:var(--tx-2);margin-left:6px}
+.meter .d{font-family:var(--mono);font-size:11px;color:var(--tx-2);margin-top:2px}
+.lens{margin-top:8px;padding-top:14px;border-top:1px solid var(--rule)}
+.lens button{display:flex;width:100%;align-items:center;gap:12px;padding:9px 8px;margin:0 -8px;width:calc(100% + 16px);text-align:left;min-height:40px;transition:background .12s}
+.lens button:hover{background:var(--bg-2)}
+.lens button kbd{font-family:var(--mono);font-size:11px;width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--rule-2);color:var(--tx-2)}
+.lens button[aria-pressed=true]{color:var(--hi)}
+.lens button[aria-pressed=true] kbd{background:var(--hi);color:var(--bg);border-color:var(--hi)}
+.lens button small{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--tx-3)}
+.legend{margin-top:14px}
+.legend .ramp{height:8px;margin:8px 0 4px}
+.legend .ticks{position:relative;height:14px;font-family:var(--mono);font-size:10px;color:var(--tx-2)}
+.legend .ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.legend .ticks span:first-child{transform:none}
+.legend .ticks span:last-child{transform:translateX(-100%)}
+.legend p{font-size:11px;line-height:1.7;color:var(--tx-2);margin-top:8px}
+
+.view{grid-row:2;position:relative;background:
+  linear-gradient(var(--rule) 1px,transparent 1px) 0 0/80px 80px,
+  linear-gradient(90deg,var(--rule) 1px,transparent 1px) 0 0/80px 80px;background-color:var(--bg);background-blend-mode:normal}
+.view::after{content:"";position:absolute;inset:0;background:radial-gradient(transparent 55%,rgba(16,17,19,.9));pointer-events:none}
+.view canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;z-index:1;cursor:crosshair}
+.coord{position:absolute;right:14px;top:12px;font-family:var(--mono);font-size:10px;color:var(--tx-2);z-index:2;letter-spacing:.06em}
+.scale{position:absolute;left:16px;bottom:14px;z-index:2;font-family:var(--mono);font-size:10px;color:var(--tx-2)}
+.scale i{display:block;height:5px;border:1px solid var(--tx-2);border-top:0;margin-bottom:4px}
+
+.city{grid-row:2;border-left:1px solid var(--rule);padding:22px 20px;display:flex;flex-direction:column}
+.city h2{font-weight:500;font-size:20px;color:var(--hi);margin:8px 0 2px;letter-spacing:.04em}
+.city .code{font-family:var(--mono);font-size:10px;color:var(--tx-3)}
+.city svg{width:100%;height:150px;margin:16px 0 8px;overflow:visible}
+.city dl{display:grid;grid-template-columns:1fr auto;gap:8px 12px;font-size:12px;padding-top:12px;border-top:1px solid var(--rule)}
+.city dt{color:var(--tx-2)}
+.city dd{font-family:var(--mono);color:var(--hi);text-align:right;font-variant-numeric:tabular-nums}
+.city .hint{margin-top:auto;font-size:11px;line-height:1.7;color:var(--tx-3)}
+
+.inst{grid-column:1/4;grid-row:3;border-top:1px solid var(--rule);display:grid;grid-template-columns:300px minmax(0,1fr) 280px}
+.ctl{display:flex;align-items:center;gap:12px;padding:0 20px;border-right:1px solid var(--rule)}
+.run{display:flex;align-items:center;gap:10px;height:48px;padding:0 18px;border:1px solid var(--hi);color:var(--hi);font-family:var(--mono);font-size:12px;letter-spacing:.14em;transition:background .12s,color .12s}
+.run:hover{background:var(--hi);color:var(--bg)}
+.run svg{width:11px;height:11px;fill:currentColor}
+.run:focus-visible,.ruler:focus-visible,.lens button:focus-visible{outline:1px solid var(--acc);outline-offset:2px}
+.spd{display:flex;border:1px solid var(--rule-2)}
+.spd button{font-family:var(--mono);font-size:11px;padding:0 10px;height:30px;color:var(--tx-2)}
+.spd button[aria-pressed=true]{background:var(--rule-2);color:var(--hi)}
+.ruler{position:relative;margin:0 28px;cursor:ew-resize;touch-action:none;--t:0}
+.ruler svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.ruler .needle{position:absolute;top:12px;bottom:26px;left:calc(var(--t)*var(--span)*100%);width:0;border-left:1px solid var(--hi);pointer-events:none}
+.ruler .needle span{position:absolute;top:-2px;left:6px;font-family:var(--mono);font-size:11px;color:var(--hi);white-space:nowrap;background:var(--bg);padding:0 4px}
+.ruler:hover .needle,.ruler.is-drag .needle{border-left-width:2px}
+.inst .aside{border-left:1px solid var(--rule);padding:16px 20px;font-size:11px;line-height:1.7;color:var(--tx-2)}
+.inst .aside b{display:block;font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:.14em;color:var(--tx-3);margin-bottom:4px}
+.src{grid-column:1/4;grid-row:4;border-top:1px solid var(--rule);padding:0 20px;display:flex;align-items:center;font-size:10px;color:var(--tx-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+@media (max-width:720px){
+  html,body{overflow:auto}
+  .app{grid-template-columns:1fr;grid-template-rows:auto auto minmax(0,1fr) auto auto;height:100dvh}
+  .bar{grid-column:1;height:32px;padding:0 16px;gap:12px;font-size:10px}
+  .bar .hide-s{display:none}
+  .read{grid-row:2;border-right:0;border-bottom:1px solid var(--rule);padding:12px 16px 0;display:grid;grid-template-columns:auto 1fr;gap:0 16px;align-items:end}
+  .read .meter{border:0;padding:0}
+  .read .m-year{grid-column:1}
+  .read .m-pop{grid-column:2;text-align:right}
+  .read .m-pop .lbl{justify-content:flex-end}
+  .read .m-ix,.read .m-lo{display:none}
+  .yr{font-size:44px;margin:4px 0 0}
+  .meter .v{font-size:20px}
+  .lens{grid-column:1/3;display:flex;margin:10px -16px 0;padding:0;border-top:1px solid var(--rule)}
+  .lens .lbl{display:none}
+  .lens button{flex:1;margin:0;width:auto;justify-content:center;gap:6px;min-height:44px;border-right:1px solid var(--rule);font-size:12px}
+  .lens button:last-child{border-right:0}
+  .lens button small{display:none}
+  .legend{display:none}
+  .view{grid-row:3}
+  .city{display:none}
+  .inst{grid-column:1;grid-row:4;grid-template-columns:minmax(0,1fr) auto;height:112px}
+  .inst .aside{display:none}
+  .ctl{order:2;border-right:0;border-left:1px solid var(--rule);padding:0 16px}
+  .ctl .spd{display:none}
+  .run{width:64px;height:64px;padding:0;flex-direction:column;justify-content:center;gap:6px;font-size:10px}
+  .ruler{margin:0 18px 0 22px}
+  .src{grid-column:1;grid-row:5;white-space:normal;padding:6px 16px calc(6px + env(safe-area-inset-bottom));line-height:1.5;font-size:9px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <span><b>FUTURE-CIV</b> / 2050</span>
+    <span class="hide-s">大阪府 27 · H3 r8 · 2,619 cells · 1km R6推計</span>
+    <span class="sp"><i class="dot" id="dot"></i><span id="state">STANDBY</span></span>
+  </header>
+
+  <section class="read" aria-live="polite">
+    <div class="meter m-year">
+      <div class="lbl"><span>Year</span><span id="kind">実績</span></div>
+      <div class="yr" id="yr">2020<small>.0</small></div>
+    </div>
+    <div class="meter m-pop">
+      <div class="lbl"><span>府の推計人口</span></div>
+      <div class="v" id="tot">8,837,685</div>
+    </div>
+    <div class="meter m-ix">
+      <div class="lbl"><span>2020年＝100</span></div>
+      <div class="v" id="ix">100.0</div>
+      <div class="d" id="dlt">±0</div>
+    </div>
+    <div class="meter m-lo">
+      <div class="lbl"><span>推計1人未満のセル</span></div>
+      <div class="v"><span id="lo">0</span><small>/ 2,619</small></div>
+    </div>
+    <div class="lens" role="group" aria-label="レンズ">
+      <div class="lbl" style="margin-bottom:6px"><span>Lens</span></div>
+      <button data-lens="pop" aria-pressed="true"><kbd>1</kbd>人口密度<small>人/km²</small></button>
+      <button data-lens="idx" aria-pressed="false"><kbd>2</kbd>存続率<small>2020=100</small></button>
+      <button data-lens="lo" aria-pressed="false"><kbd>3</kbd>消灯年<small>推計</small></button>
+    </div>
+    <div class="legend">
+      <div class="ramp" id="ramp"></div>
+      <div class="ticks" id="ticks"></div>
+      <p id="desc"></p>
+    </div>
+  </section>
+
+  <section class="view">
+    <canvas id="map" aria-label="大阪府の推計人口を六角形で表した地図"></canvas>
+    <div class="coord" id="coord">34.6863N 135.5200E</div>
+    <div class="scale" id="scale"><i style="width:80px"></i>10 km</div>
+  </section>
+
+  <aside class="city" id="city">
+    <div class="lbl"><span>Municipality</span><span>クリックで固定</span></div>
+    <h2 id="cName">大阪府</h2>
+    <div class="code" id="cCode">27000 · 43市町村の合計</div>
+    <svg id="spark" viewBox="0 0 240 150" preserveAspectRatio="none"></svg>
+    <dl>
+      <dt>2020年（実績）</dt><dd id="c20">—</dd>
+      <dt id="cyl">選択年</dt><dd id="cy">—</dd>
+      <dt>2020年＝100</dt><dd id="cix">—</dd>
+      <dt>ピーク年（〜2070）</dt><dd id="cpk">—</dd>
+    </dl>
+    <p class="hint">値は推計。市町村の推計人口は、そのセルを含む市町村全体の合計。順位づけは行わない。</p>
+  </aside>
+
+  <section class="inst">
+    <div class="ctl">
+      <button class="run" id="run" aria-label="再生"><svg viewBox="0 0 11 11" id="ri"><path d="M1 0l10 5.5L1 11z"/></svg><span id="rl">RUN</span></button>
+      <div class="spd" role="group" aria-label="速度">
+        <button data-s="0.8" aria-pressed="true">×1</button><button data-s="0.3" aria-pressed="false">×3</button>
+      </div>
+    </div>
+    <div class="ruler" id="ruler" aria-label="年"><svg id="rsvg"></svg><div class="needle"><span id="nl">2020.0</span></div></div>
+    <div class="aside"><b>RANGE</b>2020は国勢調査ベース、2025以降は推計。2055–2070は元データにあるが、フェーズ2で開放を判断する。</div>
+  </section>
+  <p class="src" id="src"></p>
+</div>
+
+<!--CORE-->
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const canvas = $('map');
+  let G, P, lens = 'pop', year = 2020, hover = null, pinned = null;
+  const SPAN = 30 / 50; // 2020-2050 が 2020-2070 の目盛りに占める割合
+  const MONO = [[26,28,31],[58,62,68],[118,124,132],[190,195,202],[244,246,248]];
+  const DOWN = [[120,126,134],[66,70,76],[36,38,42]];
+  const UP = [[120,126,134],[143,208,192]];
+  const LENS = {
+    pop: { ramp: MONO, ticks: [['0',0],['1k',.18],['5k',.41],['20k',.79],['30k/km²',1]], desc: 'セルの人口密度（推計）。単色の濃淡、平方根スケール。' },
+    idx: { ramp: [...DOWN.slice().reverse(), ...UP.slice(1)], ticks: [['60',0],['80',.33],['100',.67],['115',1]], desc: '2020年を100とした指数。濃いほど減り、青緑は増える。' },
+    lo: { ramp: [[70,74,80],[244,246,248]], ticks: [['2025',0],['2050',.56],['2070',1]], desc: '推計1人未満になる年。破線は選択年までに推計1人未満。2020年に1人未満・秘匿は対象外。' },
+  };
+  const popT = d => Math.min(1, Math.sqrt(d / 30000));
+  function fillOf(c) {
+    if (lens === 'pop') return FC.lerpColor(MONO, popT(FC.densityAt(c, year)));
+    const i = FC.indexAt(c, year); if (i == null) return '#1d1f22';
+    return i < 100 ? FC.lerpColor(DOWN, (100 - i) / 40) : FC.lerpColor(UP, (i - 100) / 15);
+  }
+  function draw() {
+    if (!G) return;
+    const { ctx, w, h } = G; ctx.clearRect(0, 0, w, h);
+    for (const c of FC.cells) {
+      if (c.kind === 'out') continue;
+      ctx.beginPath(); P.hexPath(ctx, c.x, c.y, .86);
+      if (c.kind === 'empty') { ctx.strokeStyle = '#26282c'; ctx.lineWidth = .6; ctx.stroke(); continue; }
+      if (lens === 'lo') {
+        const st = FC.lightState(c, year);
+        if (st === 'none' || st === 'na') { ctx.fillStyle = '#212327'; ctx.fill(); }
+        else if (st === 'out') { ctx.setLineDash([2, 2]); ctx.strokeStyle = '#8a9099'; ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]); }
+        else { ctx.fillStyle = FC.lerpColor(LENS.lo.ramp, (c.lo - 2025) / 45); ctx.fill(); }
+      } else { ctx.fillStyle = fillOf(c); ctx.fill(); }
+    }
+    ctx.font = '10px "IBM Plex Mono", "IBM Plex Sans JP", monospace'; ctx.textAlign = 'left';
+    for (const L of FC.labelPoints()) { ctx.strokeStyle = '#eef0f3'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(L.x, L.y); ctx.lineTo(L.x + 10, L.y - 10); ctx.lineTo(L.x + 14, L.y - 10); ctx.stroke(); ctx.fillStyle = 'rgba(16,17,19,.85)'; const tw = ctx.measureText(L.name).width; ctx.fillRect(L.x + 15, L.y - 17, tw + 6, 14); ctx.fillStyle = '#eef0f3'; ctx.fillText(L.name, L.x + 18, L.y - 6); }
+    const sel = hover || pinned;
+    if (sel && sel.city >= 0) {
+      ctx.strokeStyle = '#eef0f3'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(sel.x, 0); ctx.lineTo(sel.x, h); ctx.moveTo(0, sel.y); ctx.lineTo(w, sel.y);
+      ctx.globalAlpha = .25; ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.beginPath(); P.hexPath(ctx, sel.x, sel.y, 1.15); ctx.lineWidth = 1.5; ctx.stroke();
+    }
+  }
+  function layout() {
+    G = FC.setupCanvas(canvas);
+    P = FC.makeProjection(G.w, G.h, G.w < 500 ? { t: 8, r: 8, b: 8, l: 8 } : { t: 28, r: 28, b: 28, l: 28 });
+    $('scale').firstElementChild.style.width = (P.s * 10 / 111) + 'px';
+    buildRuler(); draw(); city();
+  }
+  // 計器スライダー：1年ごとの目盛り＋府人口の推移線、2055–2070 は未開放の斜線
+  function buildRuler() {
+    const el = $('ruler'), r = el.getBoundingClientRect(), W = r.width, H = r.height;
+    const svg = $('rsvg'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const narrow = W < 400, base = H - 28, top = 18, X = y => (y - 2020) / 50 * W;
+    const pv = y => FC.totalAt(y), vMin = 5.6e6, vMax = 9.0e6, Y = v => base - (v - vMin) / (vMax - vMin) * (base - top);
+    let s = `<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#2a2c30" stroke-width="2"/></pattern></defs>`;
+    s += `<rect x="${X(2050)}" y="${top}" width="${W - X(2050)}" height="${base - top}" fill="url(#hatch)"/>`;
+    s += `<text x="${X(2060)}" y="${narrow ? base - 6 : top + 14}" fill="#5d636b" font-family="IBM Plex Mono" font-size="10" text-anchor="middle">${narrow ? 'LOCKED' : 'LOCKED · PHASE 2'}</text>`;
+    let d = '', d2 = '';
+    for (let y = 2020; y <= 2070; y += .5) { (y <= 2050 ? (d += (d ? 'L' : 'M') + X(y) + ' ' + Y(pv(y))) : null); if (y >= 2050) d2 += (d2 ? 'L' : 'M') + X(y) + ' ' + Y(pv(y)); }
+    s += `<path d="${d} L${X(2050)} ${base} L0 ${base}Z" fill="rgba(200,204,210,.07)"/><path d="${d}" fill="none" stroke="#c8ccd2" stroke-width="1.2"/><path d="${d2}" fill="none" stroke="#5d636b" stroke-width="1" stroke-dasharray="3 3"/>`;
+    s += `<line x1="0" x2="${W}" y1="${base}" y2="${base}" stroke="#3a3d42"/>`;
+    for (let y = 2020; y <= 2070; y++) {
+      const major = y % 10 === 0, mid = y % 5 === 0, x = X(y);
+      if (narrow && !mid) continue;
+      s += `<line x1="${x}" x2="${x}" y1="${base}" y2="${base + (major ? 10 : mid ? 7 : 4)}" stroke="${y > 2050 ? '#3a3d42' : '#8a9099'}"/>`;
+      if (major || (!narrow && mid)) s += `<text x="${x}" y="${base + 22}" fill="${y > 2050 ? '#5d636b' : '#8a9099'}" font-family="IBM Plex Mono" font-size="${major ? 11 : 10}" text-anchor="middle">${narrow ? "'" + String(y).slice(2) : y}</text>`;
+    }
+    s += `<text x="2" y="${top - 6}" fill="#5d636b" font-family="IBM Plex Mono" font-size="10">府人口 推移</text>`;
+    svg.innerHTML = s;
+    el.style.setProperty('--span', 1);
+  }
+  const rulerSet = FC.bindTrack($('ruler'), { from: 2020, to: 2070, onInput: y => setYear(Math.min(2050, y)), onGrab: () => player.pause() });
+  function setYear(y) {
+    year = y;
+    const yi = Math.floor(y), frac = Math.floor((y - yi) * 10 + 1e-6);
+    $('yr').innerHTML = yi + '<small>.' + frac + '</small>';
+    $('nl').textContent = y.toFixed(1);
+    $('kind').textContent = y < 2021 ? '実績' : '推計';
+    const t = FC.totalAt(y), t0 = FC.totalAt(2020);
+    $('tot').textContent = FC.fmt(t);
+    $('ix').textContent = (t / t0 * 100).toFixed(1);
+    $('dlt').textContent = (t - t0 >= 0 ? '+' : '−') + FC.fmt(Math.abs(t - t0)) + ' 人 vs 2020';
+    $('lo').textContent = FC.cells.filter(c => c.kind === 'pop' && FC.lightState(c, y) === 'out').length;
+    rulerSet(y); draw(); city();
+  }
+  const player = FC.Player({ onYear: setYear, onState: on => {
+    $('ri').innerHTML = on ? '<path d="M1 0h3v11H1zM7 0h3v11H7z"/>' : '<path d="M1 0l10 5.5L1 11z"/>';
+    $('rl').textContent = on ? 'HOLD' : 'RUN'; $('run').setAttribute('aria-label', on ? '一時停止' : '再生');
+    $('state').textContent = on ? 'PLAYBACK' : 'STANDBY'; $('dot').classList.toggle('on', on);
+  }});
+  $('run').onclick = () => player.toggle();
+  document.querySelectorAll('.spd button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.spd button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    player.speed(+b.dataset.s);
+  });
+  function setLens(l) {
+    lens = l;
+    document.querySelectorAll('.lens button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lens === l));
+    const L = LENS[l];
+    $('ramp').style.background = 'linear-gradient(90deg,' + L.ramp.map(c => 'rgb(' + c + ')').join(',') + ')';
+    $('ticks').innerHTML = L.ticks.map(([s, t]) => '<span style="left:' + t * 100 + '%">' + s + '</span>').join('');
+    $('desc').textContent = L.desc; draw();
+  }
+  document.querySelectorAll('.lens button').forEach(b => b.onclick = () => setLens(b.dataset.lens));
+  window.addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '3') setLens(['pop', 'idx', 'lo'][+e.key - 1]); if (e.key === ' ' && e.target === document.body) { e.preventDefault(); player.toggle(); } });
+  // 市町村パネル
+  function city() {
+    const sel = hover || pinned;
+    const ci = sel && sel.city >= 0 ? sel.city : null;
+    const Y5 = Object.keys(FC.meta.pref_total).map(Number);
+    const series = ci == null ? Y5.map(y => FC.meta.pref_total[y]) : Y5.map(y => FC.cities[ci].pop[y]);
+    $('cName').textContent = ci == null ? '大阪府' : FC.cities[ci].name;
+    $('cCode').textContent = ci == null ? '27000 · 43市町村の合計' : FC.cities[ci].code;
+    const v0 = series[0], vy = ci == null ? FC.totalAt(year) : FC.cityPopAt(ci, year);
+    $('c20').textContent = FC.fmt(v0); $('cyl').textContent = Math.floor(year) + '年（推計）'; $('cy').textContent = FC.fmt(vy);
+    $('cix').textContent = (vy / v0 * 100).toFixed(1);
+    $('cpk').textContent = Y5[series.indexOf(Math.max(...series))];
+    const W = 240, H = 150, mx = Math.max(...series) * 1.02, mn = Math.min(...series) * .96;
+    const X = y => (y - 2020) / 50 * W, Yv = v => H - 16 - (v - mn) / (mx - mn) * (H - 28);
+    const pts = Y5.map((y, i) => X(y) + ',' + Yv(series[i]));
+    const cut = Y5.indexOf(2050);
+    let s = `<rect x="${X(2050)}" y="0" width="${W - X(2050)}" height="${H - 16}" fill="#16181b"/>`;
+    s += `<polyline points="${pts.slice(0, cut + 1).join(' ')}" fill="none" stroke="#eef0f3" stroke-width="1.4" vector-effect="non-scaling-stroke"/>`;
+    s += `<polyline points="${pts.slice(cut).join(' ')}" fill="none" stroke="#5d636b" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>`;
+    s += `<line x1="${X(year)}" x2="${X(year)}" y1="0" y2="${H - 16}" stroke="#8fd0c0" vector-effect="non-scaling-stroke"/>`;
+    s += `<line x1="0" x2="${W}" y1="${H - 16}" y2="${H - 16}" stroke="#3a3d42" vector-effect="non-scaling-stroke"/>`;
+    [2020, 2050, 2070].forEach(y => s += `<text x="${X(y)}" y="${H - 2}" fill="#5d636b" font-size="9" font-family="IBM Plex Mono" text-anchor="${y === 2020 ? 'start' : y === 2070 ? 'end' : 'middle'}">${y}</text>`);
+    $('spark').innerHTML = s;
+  }
+  const local = e => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  canvas.addEventListener('pointermove', e => {
+    const [x, y] = local(e); const [la, ln] = P.unproject(x, y);
+    $('coord').textContent = la.toFixed(4) + 'N ' + ln.toFixed(4) + 'E';
+    if (e.pointerType !== 'mouse') return;
+    const c = FC.hit(x, y, P.r * 1.2); if (c !== hover) { hover = c; draw(); city(); }
+  });
+  canvas.addEventListener('pointerleave', () => { hover = null; draw(); city(); });
+  canvas.addEventListener('click', e => { pinned = FC.hit(...local(e), P.r * 1.5); hover = null; draw(); city();
+    if (pinned && pinned.city >= 0) $('coord').textContent = FC.cities[pinned.city].name + '  ' + FC.fmt(FC.cityPopAt(pinned.city, year)) + '人（' + Math.floor(year) + '・推計）'; });
+  $('src').textContent = FC.SOURCE;
+  window.addEventListener('resize', layout);
+  const q = new URLSearchParams(location.search);
+  setLens(q.get('lens') || 'pop'); layout(); setYear(+(q.get('year') || 2020));
+  if (document.fonts) document.fonts.ready.then(layout);
+})();
+</script>
+</body>
+</html>

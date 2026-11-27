@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>未来暦 — B案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=BIZ+UDPMincho:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#efe7d6; --paper-2:#e6dcc6; --sumi:#2a2722; --sumi-2:#5d564b; --usuzumi:#9d9483;
+  --ai:#27406a; --odo:#b0802a; --rule:#2a2722;
+  --antique:"Zen Antique",serif; --mincho:"BIZ UDPMincho",serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:var(--paper);color:var(--sumi)}
+body{font-family:var(--mincho);-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(rgba(42,39,34,.05) 1px,transparent 1px);background-size:5px 5px}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.page{height:100vh;display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-rows:auto minmax(0,1fr) auto;gap:0 40px;padding:28px 40px 18px}
+
+/* 題字の帯 */
+.mast{grid-column:1/3;display:flex;align-items:flex-end;gap:28px;padding-bottom:12px;border-bottom:3px double var(--rule)}
+.mast h1{font-family:var(--antique);font-weight:400;font-size:40px;line-height:1;letter-spacing:.18em}
+.mast .sub{font-size:13px;letter-spacing:.2em;color:var(--sumi-2);padding-bottom:4px}
+.tabs{margin-left:auto;display:flex;gap:0;align-self:flex-end;margin-bottom:-15px}
+.tabs button{padding:9px 16px 10px;border:1px solid var(--rule);border-bottom:0;margin-left:-1px;background:var(--paper-2);font-size:14px;letter-spacing:.12em;min-height:44px;transition:background .15s}
+.tabs button span{font-family:var(--antique);margin-right:.5em}
+.tabs button:hover{background:#f6f0e2}
+.tabs button[aria-pressed=true]{background:var(--paper);position:relative;top:1px;padding-bottom:12px}
+.tabs button:focus-visible,.play:focus-visible,.index:focus-visible,.strip:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+
+/* 地図盤 */
+.board{grid-column:1;grid-row:2;position:relative;margin-top:28px;border:1px solid var(--rule);outline:1px solid var(--rule);outline-offset:4px;min-height:0}
+.board canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.grat{position:absolute;font-size:10px;letter-spacing:.06em;color:var(--sumi-2);background:var(--paper);padding:0 4px}
+.key{position:absolute;left:18px;top:18px;padding:12px 14px;background:var(--paper);border:1px solid var(--rule);font-size:11px;line-height:1.6;max-width:230px}
+.key h3{font-family:var(--antique);font-weight:400;font-size:14px;letter-spacing:.2em;margin-bottom:6px}
+.key .row{display:flex;align-items:center;gap:10px;margin:2px 0}
+.key svg{flex:none}
+.key p{color:var(--sumi-2);margin-top:6px}
+
+/* 暦 */
+.koyomi{grid-column:2;grid-row:2;display:flex;flex-direction:column;margin-top:28px;min-height:0}
+.leaf{border:1px solid var(--rule);background:#f5efe1;position:relative}
+.leaf::before{content:"";position:absolute;left:0;right:0;top:-7px;height:7px;background:repeating-linear-gradient(90deg,transparent 0 10px,var(--rule) 10px 12px);opacity:.5}
+.leaf .band{background:var(--sumi);color:var(--paper);display:flex;justify-content:space-between;padding:8px 16px;font-size:13px;letter-spacing:.24em}
+.leaf .big{font-family:var(--antique);font-size:96px;line-height:1.05;text-align:center;letter-spacing:.02em;padding:18px 0 4px;font-feature-settings:"palt"}
+.leaf .big.flip{animation:flip .38s ease-out}
+@keyframes flip{from{transform:translateY(-10px) rotateX(35deg);opacity:.2}to{transform:none;opacity:1}}
+.leaf .west{text-align:center;font-size:13px;letter-spacing:.3em;color:var(--sumi-2)}
+.leaf .tot{display:flex;justify-content:center;align-items:baseline;gap:10px;margin:14px 16px 16px;padding-top:12px;border-top:1px solid var(--rule);font-size:13px;letter-spacing:.12em}
+.leaf .tot b{font-size:28px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.leaf .ix{text-align:center;font-size:12px;color:var(--sumi-2);margin:-8px 0 14px;letter-spacing:.1em}
+
+.ctrl{display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px}
+.ctrl h2{font-family:var(--antique);font-weight:400;font-size:16px;letter-spacing:.3em}
+.play{display:flex;align-items:center;gap:10px;padding:0 16px;height:44px;border:2px solid var(--ai);color:var(--ai);font-size:14px;letter-spacing:.2em;transition:background .15s,color .15s}
+.play:hover{background:var(--ai);color:var(--paper)}
+.play svg{width:12px;height:12px;fill:currentColor}
+
+.index{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);cursor:ns-resize;touch-action:none;--t:0}
+.index .r{position:absolute;left:0;right:0;display:grid;grid-template-columns:116px 1fr 92px;align-items:center;font-size:13px;transform:translateY(-50%)}
+.index .r .y{font-family:var(--antique);font-size:15px;letter-spacing:.06em;padding-left:22px}
+.index .r .bar{height:7px;background:var(--ai);opacity:.85}
+.index .r.act .bar{background:var(--sumi)}
+.index .r .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--sumi-2)}
+.index .r.real .y::after{content:"実";font-size:10px;margin-left:6px;border:1px solid var(--sumi);padding:0 2px;vertical-align:2px;font-family:var(--mincho)}
+.index .rule{position:absolute;left:0;right:0;border-top:1px dotted var(--usuzumi)}
+.index .mark{position:absolute;left:0;right:0;top:calc(var(--t)*100%);height:0;border-top:2px solid var(--odo);pointer-events:none}
+.index .mark::before{content:"";position:absolute;left:0;top:-10px;width:12px;height:18px;background:var(--odo);clip-path:polygon(0 0,100% 0,100% 100%,50% 75%,0 100%)}
+.index:hover .mark{border-top-width:3px}
+.strip{display:none}
+.src{grid-column:1/3;grid-row:3;margin-top:14px;padding-top:8px;border-top:1px solid var(--rule);font-size:10px;line-height:1.6;color:var(--sumi-2)}
+
+.tip{position:fixed;pointer-events:none;background:var(--paper);border:1px solid var(--rule);box-shadow:3px 3px 0 var(--paper-2);padding:10px 12px;font-size:12px;line-height:1.7;opacity:0;transition:opacity .12s;min-width:180px}
+.tip.on{opacity:1}
+.tip b{font-family:var(--antique);font-weight:400;font-size:17px;letter-spacing:.14em;display:block}
+
+@media (max-width:720px){
+  .page{height:auto;min-height:100vh;display:block;padding:14px 16px 0}
+  .mast{flex-wrap:wrap;gap:4px 12px;padding-bottom:0;border-bottom:0}
+  .mast h1{font-size:28px}
+  .mast .sub{font-size:11px;letter-spacing:.1em}
+  .tabs{margin:10px 0 0;width:100%;border-bottom:3px double var(--rule)}
+  .tabs button{flex:1;padding:8px 4px;font-size:13px;letter-spacing:.04em}
+  .tabs button[aria-pressed=true]{padding-bottom:9px}
+  .board{height:calc(100vh - 360px);min-height:330px;margin-top:14px}
+  .key{left:8px;top:8px;padding:6px 8px;max-width:150px;font-size:10px}
+  .key h3{font-size:12px;margin-bottom:2px}
+  .key p{display:none}
+  .grat{display:none}
+  .koyomi{position:fixed;left:0;right:0;bottom:0;margin:0;background:var(--paper);border-top:3px double var(--rule);padding:10px 16px calc(8px + env(safe-area-inset-bottom));z-index:5}
+  .leaf{display:grid;grid-template-columns:1fr auto;align-items:end;border:0;background:none}
+  .leaf::before,.leaf .band,.leaf .ix{display:none}
+  .leaf .big{font-size:44px;text-align:left;padding:0;grid-column:1}
+  .leaf .west{grid-column:1;text-align:left;font-size:11px;letter-spacing:.14em}
+  .leaf .tot{grid-column:1;justify-content:flex-start;margin:4px 0 0;padding:0;border:0;font-size:11px;gap:6px;letter-spacing:.04em}
+  .leaf .tot b{font-size:18px}
+  .ctrl{position:absolute;right:16px;top:14px;margin:0}
+  .ctrl h2{display:none}
+  .play{width:64px;height:64px;padding:0;flex-direction:column;justify-content:center;gap:4px;font-size:11px;letter-spacing:.1em}
+  .index{display:none}
+  .strip{display:block;position:relative;height:52px;margin-top:10px;border-top:1px solid var(--rule);touch-action:none;--t:0}
+  .strip .c{position:absolute;bottom:18px;width:12%;transform:translateX(-50%);display:flex;justify-content:center}
+  .strip .c i{display:block;width:8px;background:var(--ai);opacity:.85}
+  .strip .c span{position:absolute;bottom:-16px;white-space:nowrap;font-size:10px;color:var(--sumi-2)}
+  .strip .mark{position:absolute;top:0;bottom:16px;left:calc(var(--t)*100%);border-left:2px solid var(--odo);mix-blend-mode:multiply}
+  .strip .mark::before{content:"";position:absolute;top:-1px;left:-8px;width:14px;height:12px;background:var(--odo);clip-path:polygon(0 0,100% 0,100% 100%,50% 70%,0 100%)}
+  .src{margin:0 0 200px;font-size:9px;border-top:0}
+  .tip{left:16px!important;right:16px;top:150px!important}
+}
+@media (prefers-reduced-motion:reduce){.leaf .big.flip{animation:none}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="mast">
+    <h1>未来暦</h1>
+    <p class="sub">大阪府　人口の暦　二〇二〇年より二〇五〇年まで</p>
+    <nav class="tabs" aria-label="レンズ">
+      <button data-lens="pop" aria-pressed="true"><span>壱</span>人口</button>
+      <button data-lens="idx" aria-pressed="false"><span>弐</span>存続率</button>
+      <button data-lens="lo" aria-pressed="false"><span>参</span>消灯年</button>
+    </nav>
+  </header>
+
+  <section class="board" id="board">
+    <canvas id="map" aria-label="大阪府の推計人口を網点で表した地図"></canvas>
+    <span class="grat" style="top:-8px;left:24px">北緯35°</span>
+    <span class="grat" style="bottom:-8px;right:24px">東経135°30′</span>
+    <div class="key" id="key"></div>
+  </section>
+
+  <aside class="koyomi">
+    <div class="leaf">
+      <div class="band"><span id="era">令和二年</span><span id="kind">実績</span></div>
+      <div class="big" id="big">二〇二〇</div>
+      <p class="west" id="west">西暦二〇二〇年</p>
+      <p class="tot">府の推計人口<b id="tot">8,837,685</b>人</p>
+      <p class="ix" id="ix">二〇二〇年を百として　100.0</p>
+    </div>
+    <div class="ctrl">
+      <h2>暦の目次</h2>
+      <button class="play" id="play" aria-label="再生"><svg viewBox="0 0 12 12" id="pi"><path d="M2 1l9 5-9 5z"/></svg><span id="pl">めくる</span></button>
+    </div>
+    <div class="index" id="index" aria-label="年"></div>
+    <div class="strip" id="strip" aria-label="年"></div>
+  </aside>
+  <p class="src" id="src"></p>
+</div>
+<div class="tip" id="tip"></div>
+
+<!--CORE-->
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const canvas = $('map');
+  let G, P, lens = 'pop', year = 2020, hover = null, lastInt = 2020;
+  const AI = [39, 64, 106], ODO = [176, 128, 42], SUMI = [42, 39, 34];
+  const STEPS = [2020, 2025, 2030, 2035, 2040, 2045, 2050];
+  const KEYS = {
+    pop: { h: '人口の網点', rows: [[.25, '千人／km²'], [.55, '五千人'], [.95, '二万人以上']], fill: '#27406a', p: '点の大きさがその年の人口密度。推計1人未満の地点は点を打たない。' },
+    idx: { h: '存続の色', rows: [[.7, '減る（二〇二〇年＝百より下）', '#27406a'], [.7, 'ほぼ変わらない', '#a69c88'], [.7, '増える', '#b0802a']], p: '点の大きさは二〇二〇年の人口、色は二〇二〇年を百とした推計の指数。' },
+    lo: { h: '灯りの落ちる年', rows: [[.55, '二〇五〇年までに一人未満（推計）', '#2a2722'], [.55, '二〇五五〜七〇年に一人未満（推計）', '#9d9483'], [.55, '推計一人未満になった地点', 'ring']], p: '二〇二〇年に一人未満の地点と秘匿値は対象外。確定した将来ではない。' },
+  };
+  function draw() {
+    if (!G) return;
+    const { ctx, w, h } = G; ctx.clearRect(0, 0, w, h);
+    const r = P.r * 0.98;
+    for (const c of FC.cells) {
+      if (c.kind === 'out') { ctx.fillStyle = 'rgba(39,64,106,.07)'; ctx.fillRect(c.x - r * .5, c.y - .5, r, 1); continue; }
+      if (c.kind === 'empty') { ctx.fillStyle = 'rgba(42,39,34,.28)'; ctx.fillRect(c.x - .6, c.y - .6, 1.2, 1.2); continue; }
+      let rad, col, ring = false;
+      if (lens === 'pop') {
+        const p = FC.popAt(c, year); if (p < 1) { ctx.fillStyle = 'rgba(42,39,34,.28)'; ctx.fillRect(c.x - .6, c.y - .6, 1.2, 1.2); continue; }
+        rad = r * Math.max(.14, Math.sqrt(Math.min(1, FC.densityAt(c, year) / 20000))); col = 'rgb(39,64,106)';
+      } else if (lens === 'idx') {
+        const i = FC.indexAt(c, year); rad = r * Math.max(.18, Math.sqrt(Math.min(1, FC.densityAt(c, 2020) / 20000)));
+        if (i == null) { col = 'rgba(157,148,131,.6)'; }
+        else if (i < 100) { const t = Math.min(1, (100 - i) / 35); col = FC.lerpColor([[166, 156, 136], [100, 112, 128], AI], t); }
+        else { col = FC.lerpColor([[166, 156, 136], ODO], Math.min(1, (i - 100) / 12)); }
+      } else {
+        const st = FC.lightState(c, year);
+        if (st === 'none' || st === 'na') { rad = r * .26; col = 'rgba(39,64,106,.30)'; }
+        else if (st === 'out') { rad = r * .62; ring = true; }
+        else { rad = r * .7; col = st === 'soon' ? '#2a2722' : '#9d9483'; }
+      }
+      ctx.beginPath(); ctx.arc(c.x, c.y, rad, 0, Math.PI * 2);
+      if (ring) { ctx.strokeStyle = '#2a2722'; ctx.lineWidth = 1; ctx.stroke(); } else { ctx.fillStyle = col; ctx.fill(); }
+    }
+    ctx.font = (G.w < 500 ? 11 : 13) + 'px "BIZ UDPMincho", serif'; ctx.textAlign = 'left';
+    for (const L of FC.labelPoints()) { ctx.fillStyle = '#2a2722'; ctx.fillRect(L.x - 2, L.y - 2, 4, 4); ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(239,231,214,.92)'; ctx.strokeText(L.name, L.x + 6, L.y + 4); ctx.fillText(L.name, L.x + 6, L.y + 4); }
+    if (hover) { ctx.beginPath(); ctx.arc(hover.x, hover.y, P.r * 1.5, 0, Math.PI * 2); ctx.strokeStyle = '#b0802a'; ctx.lineWidth = 2; ctx.stroke(); }
+  }
+  function layout() {
+    G = FC.setupCanvas(canvas);
+    P = FC.makeProjection(G.w, G.h, G.w < 500 ? { t: 10, r: 10, b: 10, l: 10 } : { t: 24, r: 24, b: 24, l: 24 });
+    buildIndex(); draw();
+  }
+  // 目次（縦）と帯（横）
+  const pMin = 7.0e6, pMax = 9.0e6;
+  function buildIndex() {
+    const ix = $('index'); ix.innerHTML = '';
+    STEPS.forEach(y => {
+      const t = (y - 2020) / 30;
+      const v = FC.meta.pref_total[y];
+      ix.insertAdjacentHTML('beforeend', '<div class="rule" style="top:' + t * 100 + '%"></div><div class="r' + (y === 2020 ? ' real' : '') + '" data-y="' + y + '" style="top:' + (4 + t * 92) + '%"><span class="y">' + FC.kanjiDigits(y) + '</span><span class="bar" style="width:' + ((v - pMin) / (pMax - pMin) * 100) + '%"></span><span class="n">' + (v / 1e4).toFixed(1) + '万人</span></div>');
+    });
+    ix.insertAdjacentHTML('beforeend', '<div class="mark"></div>');
+    const st = $('strip'); st.innerHTML = '';
+    STEPS.forEach(y => {
+      const t = (y - 2020) / 30, v = FC.meta.pref_total[y];
+      st.insertAdjacentHTML('beforeend', '<div class="c" style="left:' + (6 + t * 88) + '%"><i style="height:' + (4 + (v - pMin) / (pMax - pMin) * 24) + 'px"></i><span>' + y + '</span></div>');
+    });
+    st.insertAdjacentHTML('beforeend', '<div class="mark"></div>');
+  }
+  const idxSet = FC.bindTrack($('index'), { vertical: true, onInput: y => setYear(y), onGrab: () => player.pause() });
+  const stripSet = FC.bindTrack($('strip'), { onInput: y => setYear(y), onGrab: () => player.pause() });
+  function setYear(y) {
+    year = y; const yi = Math.floor(y + 1e-6);
+    $('index').style.setProperty('--t', (4 + (y - 2020) / 30 * 92) / 100);
+    stripSet(y); $('strip').style.setProperty('--t', (6 + (y - 2020) / 30 * 88) / 100);
+    $('index').setAttribute('aria-valuenow', yi);
+    if (yi !== lastInt || !$('big').textContent) {
+      const b = $('big'); b.textContent = FC.kanjiDigits(yi); b.classList.remove('flip'); void b.offsetWidth; b.classList.add('flip'); lastInt = yi;
+    }
+    $('era').textContent = FC.reiwa(yi);
+    $('kind').textContent = yi === 2020 ? '実績' : '推計';
+    $('west').textContent = '西暦' + yi + '年';
+    const t = FC.totalAt(y); $('tot').textContent = FC.fmt(t);
+    $('ix').textContent = '二〇二〇年を百として　' + (t / FC.totalAt(2020) * 100).toFixed(1);
+    document.querySelectorAll('.index .r').forEach(r => r.classList.toggle('act', Math.abs(+r.dataset.y - y) < 2.5));
+    draw(); if (hover) tip(hover);
+  }
+  const player = FC.Player({ onYear: setYear, onState: on => {
+    $('pi').innerHTML = on ? '<path d="M2 1h3v10H2zM7 1h3v10H7z"/>' : '<path d="M2 1l9 5-9 5z"/>';
+    $('pl').textContent = on ? 'とめる' : 'めくる'; $('play').setAttribute('aria-label', on ? '一時停止' : '再生');
+  }});
+  $('play').onclick = () => player.toggle();
+  function setLens(l) {
+    lens = l;
+    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lens === l));
+    const K = KEYS[l];
+    $('key').innerHTML = '<h3>' + K.h + '</h3>' + K.rows.map(([s, t, c]) => '<div class="row"><svg width="22" height="22"><circle cx="11" cy="11" r="' + (s * 10) + '" ' + (c === 'ring' ? 'fill="none" stroke="#2a2722"' : 'fill="' + (c || K.fill) + '"') + '/></svg>' + t + '</div>').join('') + '<p>' + K.p + '</p>';
+    draw();
+  }
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setLens(b.dataset.lens));
+  function tip(c) {
+    const el = $('tip');
+    if (!c || c.city < 0) { el.classList.remove('on'); return; }
+    const p = FC.popAt(c, year), ix = FC.indexAt(c, year);
+    el.innerHTML = '<b>' + FC.cities[c.city].name + '</b>' + Math.floor(year) + '年の推計人口　' + FC.fmt(FC.cityPopAt(c.city, year)) + '人<br>この地点　' + (p < 1 ? '推計1人未満' : FC.fmt(p) + '人') + (ix != null ? '（2020年＝100で ' + ix.toFixed(0) + '）' : '');
+    const rect = canvas.getBoundingClientRect();
+    el.style.left = (rect.left + c.x + 18) + 'px'; el.style.top = (rect.top + c.y - 30) + 'px'; el.classList.add('on');
+  }
+  const local = e => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  canvas.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; const c = FC.hit(...local(e), P.r * 1.3); if (c !== hover) { hover = c; draw(); tip(c); } });
+  canvas.addEventListener('pointerleave', () => { hover = null; draw(); tip(null); });
+  canvas.addEventListener('click', e => { hover = FC.hit(...local(e), P.r * 1.5); draw(); tip(hover); });
+  $('src').textContent = FC.SOURCE;
+  window.addEventListener('resize', layout);
+  const q = new URLSearchParams(location.search);
+  setLens(q.get('lens') || 'pop'); layout(); setYear(+(q.get('year') || 2020));
+  if (document.fonts) document.fonts.ready.then(layout);
+})();
+</script>
+</body>
+</html>

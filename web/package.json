@@ -1,0 +1,23 @@
+{
+  "name": "future-civ-2050",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "5.7",
+    "vite": "^6.4.6"
+  },
+  "dependencies": {
+    "@deck.gl/core": "^9.1.15",
+    "@deck.gl/extensions": "^9.1.15",
+    "@deck.gl/geo-layers": "^9.1.15",
+    "@deck.gl/layers": "^9.1.15",
+    "@deck.gl/mesh-layers": "^9.1.15",
+    "h3-js": "^4.1.0"
+  }
+}
