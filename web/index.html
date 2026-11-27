@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>未来文明マップ2050 — 大阪府</title>
+<meta name="description" content="国の将来推計人口（国土数値情報 R6国政局推計）を約1kmの六角形で表し、2020年から2050年への変化を時間で眺める地図。値は推計であり確定した将来ではありません。">
+<meta name="theme-color" content="#101113">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23101113'/%3E%3Cpath d='M16 5l9.5 5.5v11L16 27l-9.5-5.5v-11z' fill='none' stroke='%23eef0f3' stroke-width='2'/%3E%3Cpath d='M16 11v10' stroke='%238fd0c0' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <h1><b>未来文明マップ</b>2050</h1>
+    <span class="hide-s" id="scope">大阪府 · 1kmメッシュ推計（R6国政局推計）</span>
+    <button class="list-btn" id="listBtn" type="button" aria-controls="panel">市町村</button>
+    <span class="sp"><i class="dot" id="dot"></i><span id="state">待機</span></span>
+  </header>
+
+  <section class="read" aria-label="計器">
+    <div class="meter m-year">
+      <div class="lbl"><span>年</span><span id="kind">実績ベース</span></div>
+      <div class="yr" id="yr" aria-live="off">2020<small>.0</small></div>
+    </div>
+    <div class="meter m-pop">
+      <div class="lbl"><span>府の推計人口</span></div>
+      <div class="v" id="tot">—</div>
+      <div class="d"><span class="m-ix">2020年＝100で <b id="ix">100.0</b>　</span><span id="dlt"></span></div>
+    </div>
+    <div class="meter m-lo">
+      <div class="lbl"><span>推計1人未満 ／ 半減を過ぎたセル</span></div>
+      <div class="v"><span id="lo">0</span><small> ／ </small><span id="hf">0</span><small id="ncell"></small></div>
+    </div>
+    <div class="lens" role="group" aria-label="レンズ" id="lenses"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="view" id="view" aria-label="大阪府の推計人口を六角形で表した地図。ドラッグで移動、ホイールやピンチで拡大">
+    <div class="coord" id="coord"></div>
+    <div class="scale" id="scale"><i></i>10 km</div>
+    <button class="reset" id="reset" type="button" aria-label="全体表示に戻す">全体</button>
+    <div class="tip" id="tip" role="status"></div>
+    <p class="loading" id="loading">読み込み中…</p>
+  </section>
+
+  <aside class="panel" id="panel" aria-label="市町村"></aside>
+
+  <section class="inst">
+    <div class="ctl">
+      <button class="run" id="run" type="button" aria-label="再生"><svg viewBox="0 0 11 11" id="ri" aria-hidden="true"><path d="M1 0l10 5.5L1 11z"/></svg><span id="rl">再生</span></button>
+      <div class="spd" role="group" aria-label="再生速度">
+        <button type="button" data-s="0.8" aria-pressed="true">等速</button><button type="button" data-s="0.27" aria-pressed="false">3倍</button>
+      </div>
+    </div>
+    <div class="ruler" id="ruler"></div>
+    <div class="aside"><b>範囲</b>2020年は国勢調査ベース、2025年以降は推計。2055〜2070年は元データにあるが、フェーズ2で開放を判断する。</div>
+  </section>
+  <footer class="src" id="src"></footer>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
